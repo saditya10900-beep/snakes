@@ -1,0 +1,633 @@
+
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aditya Snake Pro - Battle Edition</title>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;background:linear-gradient(135deg,#071b27,#18264b,#35134b);
+  color:white;font-family:Arial,sans-serif;text-align:center;min-height:100vh;
+}
+header{padding:16px 8px 6px}
+h1{margin:0;color:#67ffb5;text-shadow:0 0 18px #00ff9d;font-size:clamp(25px,5vw,42px)}
+header p{color:#d4e5ff;margin:8px}
+.game{width:min(96%,760px);margin:auto}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:12px 0}
+.stat{background:#ffffff12;border:1px solid #ffffff25;border-radius:12px;padding:10px 4px}
+.stat small{display:block;color:#bcd1ed;font-size:12px}
+.stat strong{font-size:20px;color:#76ffcb}
+canvas{
+  width:100%;height:auto;display:block;border:3px solid #68ffd1;
+  border-radius:14px;background:#102c35;box-shadow:0 0 25px #00ff9d33;
+  touch-action:none;
+}
+.panel{background:#ffffff10;border:1px solid #ffffff20;border-radius:14px;padding:12px;margin:12px 0}
+.options{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+select,button{
+  border:0;border-radius:9px;padding:10px 12px;font-size:14px;
+}
+select{background:#e9fff7;color:#10252b;max-width:100%}
+button{cursor:pointer;font-weight:bold;background:#65ffc1;color:#06251c}
+button:hover{filter:brightness(1.12)}
+button:active{transform:scale(.97)}
+.actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:10px 0}
+.actions button{flex:1;min-width:100px}
+#message{min-height:25px;color:#ffe58b;font-weight:bold;margin:8px}
+.dpad{display:grid;grid-template-columns:repeat(3,58px);gap:6px;justify-content:center;margin:12px auto}
+.dpad button{height:48px;font-size:22px;padding:0;background:#203d61;color:white;border:1px solid #5daeff}
+.dpad .empty{visibility:hidden}
+.hint{font-size:13px;line-height:1.6;color:#d0dced}
+footer{padding:12px;color:#9fb2cc;font-size:12px}
+@media(max-width:480px){
+ .stats{grid-template-columns:repeat(2,1fr)}
+ .stat{padding:7px}
+ .stat strong{font-size:18px}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>🐍 ADITYA SNAKE PRO</h1>
+  <p>⚔️ Snake Battle Edition · खाओ, लड़ो और जीतों!</p>
+</header>
+
+<main class="game">
+  <div class="stats">
+    <div class="stat"><small>🏆 स्कोर</small><strong id="score">0</strong></div>
+    <div class="stat"><small>🪙 सिक्के</small><strong id="coins">0</strong></div>
+    <div class="stat"><small>❤️ लाइफ</small><strong id="lives">3</strong></div>
+    <div class="stat"><small>🐍 दुश्मन बाकी</small><strong id="left">5</strong></div>
+  </div>
+
+  <canvas id="game" width="720" height="540"></canvas>
+  <div id="message">▶️ शुरू करो और दूसरे साँपों को हराओ!</div>
+
+  <div class="panel">
+    <div class="options">
+      <select id="theme" aria-label="रंग चुनें">
+        <option value="rainbow">🌈 रेनबो रंग</option>
+        <option value="green">💚 ग्रीन थीम</option>
+        <option value="blue">💙 ब्लू थीम</option>
+        <option value="pink">💗 पिंक थीम</option>
+        <option value="gold">💛 गोल्ड थीम</option>
+      </select>
+      <select id="map" aria-label="मैप चुनें">
+        <option value="jungle">🌳 जंगल मैप</option>
+        <option value="city">🌆 सिटी मैप</option>
+        <option value="space">🌌 स्पेस मैप</option>
+        <option value="home">🏡 गार्डन मैप</option>
+      </select>
+      <select id="character" aria-label="कैरेक्टर चुनें">
+        <option value="🐸">🐸 फ्रॉग</option>
+        <option value="🧑">🧑 हीरो</option>
+        <option value="🥷">🥷 निंजा</option>
+        <option value="🧙">🧙 जादूगर</option>
+        <option value="👨‍🚀">👨‍🚀 एस्ट्रोनॉट</option>
+        <option value="🦸">🦸 सुपरहीरो</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button id="start">▶️ शुरू करें</button>
+    <button id="pause">⏸️ रोकें</button>
+    <button id="sound">🔊 आवाज़ चालू</button>
+    <button id="life">❤️ लाइफ खरीदें (10 🪙)</button>
+    <button id="shieldBuy">🛡️ शील्ड (8 🪙)</button>
+  </div>
+
+  <div class="panel">
+    <strong>🎮 मोबाइल कंट्रोल</strong>
+    <div class="dpad">
+      <button class="empty">·</button>
+      <button data-dir="up">⬆️</button>
+      <button class="empty">·</button>
+      <button data-dir="left">⬅️</button>
+      <button data-dir="down">⬇️</button>
+      <button data-dir="right">➡️</button>
+    </div>
+    <div class="hint">
+      कंप्यूटर: Arrow Keys या WASD से चलें · Space से रोकें<br>
+      🍎 फल खाओ · 🪙 सिक्के इकट्ठा करो · 🛡️ शील्ड से बचाव करो<br>
+      ⚔️ दुश्मन साँप के सिर से टकराओ और उसे हराओ!
+    </div>
+  </div>
+</main>
+<footer>Made for fun · Aditya Snake Pro</footer>
+
+<script>
+(() => {
+"use strict";
+
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+const COLS = 24, ROWS = 18, S = 30;
+const $ = id => document.getElementById(id);
+
+const fruits = ["🍎","🍊","🍇","🍓","🍍","🍉","🍒","🥝","🍌","🍑"];
+const enemyColors = ["#ff5252","#42d9ff","#ff51d8","#ffe34c","#bb7bff"];
+const enemyFaces = ["🐍","🐲","🐉","🐍","🐍"];
+
+let player, enemies, foodItems, coin, powerup;
+let score = 0, coins = 0, lives = 3, level = 1;
+let shield = 0, running = false, gameOver = false, soundOn = true;
+let lastStep = 0, animationId = 0, fruitIndex = 0;
+let direction = {x:1,y:0}, nextDirection = {x:1,y:0};
+let highScore = 0, flashMessage = "", flashUntil = 0;
+let rainbowHue = 0;
+
+try { highScore = Number(localStorage.getItem("adityaSnakeHigh") || 0); }
+catch(e) {}
+
+function say(text) {
+  $("message").textContent = text;
+  flashMessage = text;
+  flashUntil = Date.now() + 2400;
+}
+
+function updateStats() {
+  $("score").textContent = score;
+  $("coins").textContent = coins;
+  $("lives").textContent = lives;
+  $("left").textContent = enemies.filter(e => e.alive).length;
+}
+
+function beep(freq=500, duration=0.08) {
+  if (!soundOn) return;
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    const ac = new AC();
+    const oscillator = ac.createOscillator();
+    const gain = ac.createGain();
+    oscillator.frequency.value = freq;
+    oscillator.type = "sine";
+    gain.gain.value = 0.045;
+    oscillator.connect(gain);
+    gain.connect(ac.destination);
+    oscillator.start();
+    gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + duration);
+    oscillator.stop(ac.currentTime + duration);
+    oscillator.onended = () => ac.close();
+  } catch(e) {}
+}
+
+function same(a,b) { return a.x===b.x && a.y===b.y; }
+function inside(p) {
+  return p.x>=0 && p.x<COLS && p.y>=0 && p.y<ROWS;
+}
+function randomCell() {
+  return {x:Math.floor(Math.random()*COLS), y:Math.floor(Math.random()*ROWS)};
+}
+function occupied(p) {
+  if (player && player.body.some(v=>same(v,p))) return true;
+  if (enemies && enemies.some(e=>e.alive && e.body.some(v=>same(v,p)))) return true;
+  if (foodItems && foodItems.some(v=>same(v,p))) return true;
+  if (coin && same(coin,p)) return true;
+  if (powerup && same(powerup,p)) return true;
+  return false;
+}
+function freeCell() {
+  for (let i=0;i<600;i++) {
+    const p=randomCell();
+    if (!occupied(p)) return p;
+  }
+  return randomCell();
+}
+function addFoods() {
+  while (foodItems.length<5) {
+    const p=freeCell();
+    foodItems.push({...p, fruit:fruits[Math.floor(Math.random()*fruits.length)]});
+  }
+}
+function spawnCoin() { coin={...freeCell(), emoji:"🪙"}; }
+function spawnPowerup() { powerup={...freeCell(), emoji:"🛡️"}; }
+
+function resetGame() {
+  score=0; coins=0; lives=3; level=1; shield=0;
+  direction={x:1,y:0}; nextDirection={x:1,y:0};
+  player={body:[{x:5,y:9},{x:4,y:9},{x:3,y:9}], color:"#48ff8b"};
+  enemies=[];
+  for (let i=0;i<5;i++) {
+    let p={x:17+(i%2),y:2+i*3};
+    if (occupied(p)) p=freeCell();
+    enemies.push({
+      body:[p,{x:Math.max(0,p.x-1),y:p.y}],
+      color:enemyColors[i], face:enemyFaces[i],
+      alive:true, id:i, moveCount:0
+    });
+  }
+  foodItems=[];
+  coin=null; powerup=null;
+  addFoods(); spawnCoin();
+  running=true; gameOver=false; lastStep=0;
+  $("start").textContent="🔄 नया गेम";
+  $("pause").textContent="⏸️ रोकें";
+  say("⚔️ लड़ाई शुरू! दुश्मन साँपों को हराओ!");
+  updateStats();
+  if (!animationId) animationId=requestAnimationFrame(loop);
+}
+
+function endGame(message) {
+  running=false; gameOver=true;
+  $("start").textContent="🔄 फिर से खेलें";
+  say(message+" — फिर से खेलने के लिए शुरू करें!");
+  beep(180,0.25);
+}
+
+function setDirection(d) {
+  const dirs={
+    up:{x:0,y:-1},down:{x:0,y:1},
+    left:{x:-1,y:0},right:{x:1,y:0}
+  };
+  const n=dirs[d];
+  if (!n) return;
+  if (n.x===-direction.x && n.y===-direction.y) return;
+  nextDirection=n;
+}
+
+function pointInBody(body,p,start=0) {
+  for(let i=start;i<body.length;i++) if(same(body[i],p)) return i;
+  return -1;
+}
+
+function addScore(n) {
+  score+=n;
+  level=Math.floor(score/10)+1;
+  if (score>highScore) {
+    highScore=score;
+    try { localStorage.setItem("adityaSnakeHigh",String(highScore)); } catch(e) {}
+  }
+}
+
+function hitEnemy(enemy) {
+  enemy.alive=false;
+  addScore(5);
+  coins+=2;
+  beep(800,0.12);
+  say("💥 दुश्मन साँप हार गया! +5 स्कोर, +2 सिक्के");
+  if (enemies.every(e=>!e.alive)) {
+    say("🏆 सभी 5 साँप हार गए! तुम चैंपियन हो!");
+    coins+=10;
+  }
+}
+
+function loseLife(message) {
+  if (shield>0) {
+    shield--;
+    say("🛡️ शील्ड ने तुम्हें बचा लिया!");
+    beep(650);
+    return;
+  }
+  lives--;
+  beep(180,0.15);
+  if(lives<=0) { updateStats(); endGame("💀 गेम ओवर"); return; }
+  player.body=[{x:5,y:9},{x:4,y:9},{x:3,y:9}];
+  direction={x:1,y:0}; nextDirection={x:1,y:0};
+  say(message+" ❤️ एक लाइफ गई!");
+}
+
+function moveEnemy(enemy) {
+  if(!enemy.alive) return;
+  enemy.moveCount++;
+  // दुश्मन हर दूसरे टिक पर चलता है, ताकि खिलाड़ी को प्रतिक्रिया का समय मिले।
+  if(enemy.moveCount%2!==0) return;
+
+  const head=enemy.body[0];
+  const options=[
+    {x:0,y:-1},{x:0,y:1},{x:-1,y:0},{x:1,y:0}
+  ].filter(d=>{
+    const p={x:head.x+d.x,y:head.y+d.y};
+    return inside(p) &&
+      !(enemy.body.length>1 && same(p,enemy.body[1])) &&
+      pointInBody(enemy.body,p,1)<0;
+  });
+
+  if(!options.length) return;
+  const playerHead=player.body[0];
+  const chase=Math.random()<0.55;
+  options.sort((a,b)=>{
+    const pa={x:head.x+a.x,y:head.y+a.y};
+    const pb={x:head.x+b.x,y:head.y+b.y};
+    const da=Math.abs(pa.x-playerHead.x)+Math.abs(pa.y-playerHead.y);
+    const db=Math.abs(pb.x-playerHead.x)+Math.abs(pb.y-playerHead.y);
+    return chase ? da-db : Math.random()-0.5;
+  });
+
+  let chosen=options[0];
+  if(Math.random()<0.22) chosen=options[Math.floor(Math.random()*options.length)];
+  const newHead={x:head.x+chosen.x,y:head.y+chosen.y};
+  enemy.body.unshift(newHead);
+  enemy.body.pop();
+}
+
+function step() {
+  if(!running) return;
+  direction=nextDirection;
+
+  const oldHead=player.body[0];
+  const head={x:oldHead.x+direction.x,y:oldHead.y+direction.y};
+
+  if(!inside(head)) {
+    loseLife("🧱 दीवार से टकरा गए");
+    updateStats();
+    return;
+  }
+
+  const eating=foodItems.some(f=>same(f,head));
+  const selfLimit=player.body.length-(eating?0:1);
+  if(pointInBody(player.body,head,0)>=0 &&
+     pointInBody(player.body,head,0)<selfLimit) {
+    loseLife("🐍 अपनी पूँछ से टकरा गए");
+    updateStats();
+    return;
+  }
+
+  // दुश्मन के सिर से टकराना: खिलाड़ी जीतता है।
+  let defeated=false;
+  for(const e of enemies) {
+    if(!e.alive) continue;
+    if(same(e.body[0],head)) {
+      hitEnemy(e);
+      defeated=true;
+      break;
+    }
+  }
+
+  // दुश्मन के शरीर से टकराना: खिलाड़ी की लाइफ कम होती है।
+  if(!defeated) {
+    let bodyHit=false;
+    for(const e of enemies) {
+      if(e.alive && pointInBody(e.body,head,1)>=0) { bodyHit=true; break; }
+    }
+    if(bodyHit) {
+      loseLife("⚔️ दुश्मन के शरीर से टकरा गए");
+      updateStats();
+      return;
+    }
+  }
+
+  player.body.unshift(head);
+
+  const fruitAt=foodItems.findIndex(f=>same(f,head));
+  if(fruitAt>=0) {
+    foodItems.splice(fruitAt,1);
+    addScore(1);
+    addFoods();
+    beep(650);
+    say("😋 फल खाया! +1 स्कोर");
+  } else {
+    player.body.pop();
+  }
+
+  if(coin && same(coin,head)) {
+    coins++;
+    coin=null;
+    spawnCoin();
+    beep(900);
+    say("🪙 सिक्का मिला!");
+  }
+  if(powerup && same(powerup,head)) {
+    shield=Math.min(shield+1,5);
+    powerup=null;
+    say("🛡️ शील्ड मिली!");
+  }
+
+  for(const e of enemies) moveEnemy(e);
+
+  // दुश्मन अगर खिलाड़ी के सिर पर आ जाए, तो टकराव होता है।
+  for(const e of enemies) {
+    if(e.alive && same(e.body[0],player.body[0])) {
+      hitEnemy(e);
+      break;
+    }
+  }
+
+  if(score>0 && score%5===0 && !powerup && Math.random()<0.25) spawnPowerup();
+  updateStats();
+}
+
+function drawCell(x,y,color,round=6) {
+  ctx.fillStyle=color;
+  ctx.beginPath();
+  ctx.roundRect(x*S+2,y*S+2,S-4,S-4,round);
+  ctx.fill();
+}
+
+function drawBackground() {
+  const map=$("map").value;
+  const theme=$("theme").value;
+  let bg="#0c322b", grid="#ffffff12";
+  if(map==="city"){bg="#18243c";grid="#d9eaff18";}
+  if(map==="space"){bg="#10102c";grid="#9d8cff20";}
+  if(map==="home"){bg="#193a24";grid="#d6ffae18";}
+  if(theme==="blue") grid="#66cfff22";
+  if(theme==="pink") grid="#ff8ad822";
+  if(theme==="gold") grid="#ffe68a25";
+
+  ctx.fillStyle=bg;
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  if(map==="city") {
+    for(let i=0;i<12;i++) {
+      const x=i*65;
+      const h=55+(i*37%100);
+      ctx.fillStyle="#263b5c";
+      ctx.fillRect(x,canvas.height-h,42,h);
+      for(let wy=canvas.height-h+8;wy<canvas.height-5;wy+=15) {
+        ctx.fillStyle="#8be7ff66";
+        ctx.fillRect(x+7,wy,5,6);
+        ctx.fillRect(x+24,wy,5,6);
+      }
+    }
+  } else if(map==="space") {
+    for(let i=0;i<75;i++) {
+      const x=(i*97)%canvas.width,y=(i*61)%canvas.height;
+      ctx.fillStyle="#ffffff88";
+      ctx.fillRect(x,y,2,2);
+    }
+  } else if(map==="jungle" || map==="home") {
+    for(let i=0;i<32;i++) {
+      const x=(i*83+13)%canvas.width,y=(i*59+21)%canvas.height;
+      ctx.fillStyle=map==="home"?"#65c75a20":"#8eff7a20";
+      ctx.beginPath();ctx.arc(x,y,8+(i%3)*3,0,Math.PI*2);ctx.fill();
+    }
+  }
+
+  ctx.strokeStyle=grid;
+  ctx.lineWidth=1;
+  for(let x=0;x<=COLS;x++) {
+    ctx.beginPath();ctx.moveTo(x*S,0);ctx.lineTo(x*S,canvas.height);ctx.stroke();
+  }
+  for(let y=0;y<=ROWS;y++) {
+    ctx.beginPath();ctx.moveTo(0,y*S);ctx.lineTo(canvas.width,y*S);ctx.stroke();
+  }
+}
+
+function drawEmoji(emoji,x,y,size=24) {
+  ctx.font=`${size}px "Apple Color Emoji","Segoe UI Emoji",sans-serif`;
+  ctx.textAlign="center";
+  ctx.textBaseline="middle";
+  ctx.fillText(emoji,x*S+S/2,y*S+S/2+1);
+}
+
+function drawSnake(snake,isPlayer=false) {
+  if(!snake || !snake.body.length) return;
+  snake.body.forEach((p,i)=>{
+    let color=snake.color;
+    if(isPlayer) {
+      if($("theme").value==="rainbow") color=`hsl(${(rainbowHue+i*24)%360},95%,60%)`;
+      if($("theme").value==="green") color=`hsl(${115-i*3},90%,${58-i*2}%)`;
+      if($("theme").value==="blue") color=`hsl(${200-i*3},95%,${60-i*2}%)`;
+      if($("theme").value==="pink") color=`hsl(${320-i*3},95%,${68-i*2}%)`;
+      if($("theme").value==="gold") color=`hsl(${43-i*2},95%,${65-i*2}%)`;
+    }
+    drawCell(p.x,p.y,color,i===0?9:5);
+    if(i===0) {
+      if(isPlayer) {
+        drawEmoji($("character").value,p.x,p.y,25);
+        if(shield>0) {
+          ctx.strokeStyle="#8deaff";
+          ctx.lineWidth=3;
+          ctx.beginPath();
+          ctx.arc(p.x*S+S/2,p.y*S+S/2,14,0,Math.PI*2);
+          ctx.stroke();
+        }
+      } else {
+        drawEmoji(snake.face,p.x,p.y,23);
+      }
+    } else {
+      ctx.fillStyle="#ffffff55";
+      ctx.beginPath();
+      ctx.arc(p.x*S+S/2,p.y*S+S/2,3,0,Math.PI*2);
+      ctx.fill();
+    }
+  });
+}
+
+function draw() {
+  drawBackground();
+  foodItems.forEach(f=>drawEmoji(f.fruit,f.x,f.y,24));
+  if(coin) drawEmoji("🪙",coin.x,coin.y,23);
+  if(powerup) drawEmoji(powerup.emoji,powerup.x,powerup.y,24);
+
+  enemies.forEach(e=>{if(e.alive)drawSnake(e,false);});
+  drawSnake(player,true);
+
+  ctx.fillStyle="#ffffffcc";
+  ctx.font="bold 13px Arial";
+  ctx.textAlign="left";
+  ctx.fillText("LEVEL "+level,10,18);
+  ctx.textAlign="right";
+  ctx.fillText("BEST "+highScore,canvas.width-10,18);
+
+  if(!running) {
+    ctx.fillStyle="#00000099";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.textAlign="center";
+    ctx.fillStyle="#70ffc6";
+    ctx.font="bold 34px Arial";
+    ctx.fillText(gameOver?"GAME OVER":"ADITYA SNAKE PRO",canvas.width/2,canvas.height/2-20);
+    ctx.fillStyle="white";
+    ctx.font="18px Arial";
+    ctx.fillText(gameOver?"फिर से खेलने के लिए शुरू करें":"शुरू करने के लिए बटन दबाएँ",canvas.width/2,canvas.height/2+22);
+  }
+}
+
+function loop(time) {
+  animationId=0;
+  if(running) {
+    const speed=Math.max(75,150-(level-1)*5);
+    if(time-lastStep>=speed) {
+      step();
+      lastStep=time;
+    }
+  }
+  rainbowHue=(rainbowHue+0.5)%360;
+  draw();
+  animationId=requestAnimationFrame(loop);
+}
+
+$("start").addEventListener("click",resetGame);
+$("pause").addEventListener("click",()=>{
+  if(gameOver) return;
+  running=!running;
+  $("pause").textContent=running?"⏸️ रोकें":"▶️ जारी रखें";
+  say(running?"गेम जारी है!":"गेम रोक दिया गया है।");
+  if(!animationId) animationId=requestAnimationFrame(loop);
+});
+$("sound").addEventListener("click",()=>{
+  soundOn=!soundOn;
+  $("sound").textContent=soundOn?"🔊 आवाज़ चालू":"🔇 आवाज़ बंद";
+  beep(500);
+});
+$("life").addEventListener("click",()=>{
+  if(coins>=10) {coins-=10;lives=Math.min(lives+1,9);say("❤️ एक अतिरिक्त लाइफ खरीदी!");}
+  else say("❌ लाइफ खरीदने के लिए 10 सिक्के चाहिए।");
+  updateStats();
+});
+$("shieldBuy").addEventListener("click",()=>{
+  if(coins>=8) {coins-=8;shield=Math.min(shield+1,5);say("🛡️ शील्ड खरीदी!");}
+  else say("❌ शील्ड के लिए 8 सिक्के चाहिए।");
+  updateStats();
+});
+
+document.querySelectorAll("[data-dir]").forEach(btn=>{
+  btn.addEventListener("click",()=>setDirection(btn.dataset.dir));
+});
+
+document.addEventListener("keydown",e=>{
+  const key=e.key.toLowerCase();
+  const keys={
+    arrowup:"up",w:"up",arrowdown:"down",s:"down",
+    arrowleft:"left",a:"left",arrowright:"right",d:"right"
+  };
+  if(keys[key]) {e.preventDefault();setDirection(keys[key]);}
+  if(key===" "){
+    e.preventDefault();
+    if(!gameOver) $("pause").click();
+  }
+});
+
+let touchStart=null;
+canvas.addEventListener("touchstart",e=>{
+  const t=e.changedTouches[0];
+  touchStart={x:t.clientX,y:t.clientY};
+},{passive:true});
+canvas.addEventListener("touchend",e=>{
+  if(!touchStart) return;
+  const t=e.changedTouches[0];
+  const dx=t.clientX-touchStart.x,dy=t.clientY-touchStart.y;
+  if(Math.max(Math.abs(dx),Math.abs(dy))>18) {
+    if(Math.abs(dx)>Math.abs(dy)) setDirection(dx>0?"right":"left");
+    else setDirection(dy>0?"down":"up");
+  }
+  touchStart=null;
+},{passive:true});
+
+// शुरुआती स्क्रीन
+player={body:[{x:5,y:9},{x:4,y:9},{x:3,y:9}],color:"#48ff8b"};
+enemies=[];
+for(let i=0;i<5;i++) {
+  enemies.push({
+    body:[{x:17,y:2+i*3},{x:16,y:2+i*3}],
+    color:enemyColors[i],face:enemyFaces[i],alive:true,id:i,moveCount:0
+  });
+}
+foodItems=[
+  {x:8,y:4,fruit:"🍎"},{x:13,y:5,fruit:"🍇"},
+  {x:9,y:13,fruit:"🍓"},{x:18,y:14,fruit:"🍍"},
+  {x:2,y:3,fruit:"🍊"}
+];
+coin={x:12,y:9,emoji:"🪙"};
+powerup=null;
+updateStats();
+draw();
+animationId=requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
